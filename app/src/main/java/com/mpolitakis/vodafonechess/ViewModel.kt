@@ -6,4 +6,8 @@ class ViewModel {
     var startingChoice : Pair<Int, Int>? = null
     var endChoice : Pair<Int, Int>? = null
 
+    fun calculatePaths(startingChoice: Pair<Int, Int>, endChoice : Pair<Int, Int>){
+
+    }
+
 }
