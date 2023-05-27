@@ -97,7 +97,7 @@ private fun SizeDialog(
     onPositiveClick: (Int) -> Unit
 ) {
 
-    var boardSize by remember { mutableStateOf(8f) }
+    var boardSize by remember { mutableStateOf(6f) }
 
 
     Dialog(onDismissRequest = onDismiss) {
@@ -129,7 +129,7 @@ private fun SizeDialog(
                         Slider(
                             value = boardSize,
                             onValueChange = { boardSize = it },
-                            valueRange = 8f..16f,
+                            valueRange = 6f..16f,
                             onValueChangeFinished = {}
                         )
                     }
