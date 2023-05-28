@@ -44,6 +44,7 @@ import com.mpolitakis.vodafonechess.ui.theme.lightSquare
 
 
 class MainActivity : ComponentActivity() {
+    val viewModel = ViewModel()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -56,6 +57,7 @@ class MainActivity : ComponentActivity() {
                     var showBoardSizeDialog by remember { mutableStateOf(true) }
                     var boardSize  by remember { mutableStateOf(8) }
                     var boardSizeChosen by remember { mutableStateOf(false) }
+
 
                     if (showBoardSizeDialog) {
                         SizeDialog(
@@ -83,6 +85,9 @@ class MainActivity : ComponentActivity() {
 
                     if (boardSizeChosen){
                         Board(boardSize = boardSize)
+                        viewModel.boardSize = boardSize
+
+
                     }
 
                 }
