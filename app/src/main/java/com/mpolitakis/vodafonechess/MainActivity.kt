@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,78 +35,76 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mpolitakis.vodafonechess.ui.Board
 import com.mpolitakis.vodafonechess.ui.theme.VodafoneChessTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    val boardViewModel = BoardViewModel()
+    private val boardViewModel: BoardViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             VodafoneChessTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var showBoardSizeDialog by remember { mutableStateOf(true) }
-                    var boardSize  by remember { mutableStateOf(8) }
                     var boardSizeChosen by remember { mutableStateOf(false) }
-
 
                     if (showBoardSizeDialog) {
                         SizeDialog(
                             onDismiss = {
                                 showBoardSizeDialog = !showBoardSizeDialog
-                                Toast.makeText(baseContext, "You haven't selected a size for the board", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(
+                                    baseContext,
+                                    "You haven't selected a size for the board",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                             onNegativeClick = {
                                 showBoardSizeDialog = !showBoardSizeDialog
-                                boardSizeChosen = !boardSizeChosen
-                                Toast.makeText(baseContext, "You haven't selected a size for the board", Toast.LENGTH_SHORT)
-                                    .show()
-
+                                boardSizeChosen = false
+                                Toast.makeText(
+                                    baseContext,
+                                    "You haven't selected a size for the board",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
-                            onPositiveClick = {
+                            onPositiveClick = { size ->
+                                boardViewModel.setBoardSize(size)
                                 showBoardSizeDialog = !showBoardSizeDialog
-                                boardSizeChosen = !boardSizeChosen
-                                boardSize = it
-                                Toast.makeText(baseContext, "Selected size: $boardSize", Toast.LENGTH_SHORT)
-                                    .show()
+                                boardSizeChosen = true
+
                             }
                         )
                     }
 
-                    if (boardSizeChosen){
-                        Board(boardSize = boardSize)
-                        boardViewModel.boardSize = boardSize
+                    if (boardSizeChosen) {
 
-
+                        Board()
                     }
-
                 }
             }
         }
     }
 }
+
+
 @Composable
 private fun SizeDialog(
     onDismiss: () -> Unit,
     onNegativeClick: () -> Unit,
     onPositiveClick: (Int) -> Unit
 ) {
-
-    var boardSize by remember { mutableStateOf(6f) }
-
+    var boardSize by remember { mutableStateOf(8) }
 
     Dialog(onDismissRequest = onDismiss) {
-
         Card(
             shape = RoundedCornerShape(12.dp)
         ) {
-
             Column(modifier = Modifier.padding(8.dp)) {
-
                 Text(
                     text = "Select Board Size",
                     fontWeight = FontWeight.Bold,
@@ -114,21 +113,19 @@ private fun SizeDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Color Selection
+                // Board Size Selection
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-
-
                     Column {
-
-                        Text(text = "Board Size ${boardSize.toInt()}")
+                        Text(text = "Board Size: $boardSize")
                         Slider(
-                            value = boardSize,
-                            onValueChange = { boardSize = it },
+                            value = boardSize.toFloat(),
+                            onValueChange = { boardSize = it.toInt() },
                             valueRange = 6f..16f,
-                            onValueChangeFinished = {}
+                            steps = 1,
+                            modifier = Modifier.width(200.dp)
                         )
                     }
                 }
@@ -138,14 +135,12 @@ private fun SizeDialog(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     TextButton(onClick = onNegativeClick) {
                         Text(text = "CANCEL")
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    TextButton(onClick = {
-                        onPositiveClick(boardSize.toInt())
-                    }) {
+                    TextButton(onClick = { onPositiveClick(boardSize) }) {
+
                         Text(text = "OK")
                     }
                 }

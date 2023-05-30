@@ -1,125 +1,123 @@
 package com.mpolitakis.vodafonechess.ui
 
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mpolitakis.vodafonechess.BoardViewModel
 import com.mpolitakis.vodafonechess.Cell
-import com.mpolitakis.vodafonechess.ui.theme.darkSquare
-import com.mpolitakis.vodafonechess.ui.theme.lightSquare
 
-val boardViewModel =BoardViewModel()
-val board = boardViewModel.board
-var start :Cell? = null
-var end : Cell? = null
 @Composable
-fun Board(boardSize : Int) {
-    val context = LocalContext.current
+fun Board() {
+    val boardViewModel: BoardViewModel = viewModel()
+    val boardSize by boardViewModel.boardSize.collectAsState()
+    val startingChoiceState by boardViewModel.startingChoice.collectAsState()
+    val endingChoiceState by boardViewModel.endingChoice.collectAsState()
+    val successfulPaths by boardViewModel.successfulPaths.collectAsState(initial = emptyList())
+
+    val board by boardViewModel.board.collectAsState()
+    val updatedBoardSize by rememberUpdatedState(boardSize)
 
     Column {
-
-        for (i in 0 until boardSize) {
+        for (row  in 0 until updatedBoardSize ) {
             Row {
-                for (j in 0 until boardSize) {
-                    val cell = Cell(i, j)
-                    boardViewModel.createBoard(cell)
-
-
-                    val isLightSquare = i % 2 == j % 2
-                    var squareColor: Color
-
-                    var selected1 by remember { mutableStateOf(false) }
-                    var selected2 by remember { mutableStateOf(false) }
-
-                    squareColor = if (selected1) {
-                        start = Cell(i , j)
-                        Color.Blue
-                    } else if (selected2) {
-                        end = Cell(i, j)
-                        Color.Red
-                    } else if (board[j].color != Color.White) {
-                        board[j].color
-                    } else {
-                        if (i % 2 != j % 2) lightSquare else darkSquare
-                    }
-
-
+                for (col in 0 until updatedBoardSize ) {
+                    val cell = board[row][col]
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-
+                        Modifier
+                            .sizeIn(10.dp, 20.dp)
+                            .background(cell.color)
                             .clickable {
-                                if (boardViewModel.startingChoice == null) {
-                                    boardViewModel.startingChoice = Cell(i, j)
-                                    selected1 = true
-
-                                } else if (boardViewModel.endChoice == null) {
-                                    boardViewModel.endChoice = Cell(i, j)
-                                    selected2 = true
+                                if (cell.isStarting) {
+                                    boardViewModel.setStartingChoice(cell)
+                                } else if (cell.isEnding) {
+                                    boardViewModel.setEndingChoice(cell)
+                                } else {
+                                    boardViewModel.findKnightTour(
+                                        boardViewModel.startingChoice.value ?: return@clickable,
+                                        cell,
+                                        boardSize
+                                    )
                                 }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val pathCount = successfulPaths.size
+                        val labelText = when {
+                            cell.isStarting -> "S"
+                            cell.isEnding -> "E"
+                            pathCount > 0 -> pathCount.toString()
+                            else -> ""
+                        }
 
+                        Text(
+                            text = labelText,
+                            fontSize = 26.sp,
+                            color = Color.Black
+                        )
 
+                        if (pathCount > 0) {
+                            val successfulPath = successfulPaths.find { it == cell }
+                            val pathIndex = successfulPaths.indexOf(successfulPath)
+                            if (successfulPath != null) {
+                                boardViewModel.findKnightTour(cell, successfulPath, pathIndex)
                             }
-                            .background(squareColor)
-                    )
-
+                        }
+                    }
                 }
             }
         }
-        Row() {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    Toast.makeText(context, "Selected size: ${start}", Toast.LENGTH_SHORT)
-                        .show()
-                    if (start != null && end != null)
-                        boardViewModel.knight(
-                            start!!,
-                            end!!, boardSize, moves = 3 )
+        LaunchedEffect(updatedBoardSize) {
+            boardViewModel.setBoardSize(updatedBoardSize)
+        }
 
-                },
-                icon = {
-                    Icon(
-                        Icons.Filled.Build,
-                        contentDescription = "Find Path"
-                    )
-                },
-                text = { Text("Find Path") }
-            )
-            ExtendedFloatingActionButton(
-                onClick = {
-                    Log.e("e", "Hello")
+        Spacer(modifier = Modifier.size(16.dp))
 
-                },
-                icon = {
-                    Icon(
-                        Icons.Filled.ArrowBack,
-                        contentDescription = "Clear Board"
-                    )
-                },
-                text = { Text("Clear Board") }
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            FloatingActionButton(
+                modifier = Modifier.padding(bottom = 8.dp),
+                onClick = {
+                    boardViewModel.startingChoice.value?.let { startingChoice ->
+                        boardViewModel.endingChoice.value?.let { endingChoice ->
+                            boardViewModel.findKnightTour(
+                                startingChoice,
+                                endingChoice,
+                                boardViewModel.boardSize.value
+                            )
+                        }
+                    }
+                }
+            ) {
+                Text(text = "Generate Path")
+            }
+
+            FloatingActionButton(
+                modifier = Modifier.padding(bottom = 8.dp),
+                onClick = { boardViewModel.clearPaths() }
+            ) {
+                Text(text = "Clear")
+            }
         }
     }
-
 }
+
