@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -19,37 +20,35 @@ data class Move(val x: Int, val y: Int)
 @HiltViewModel
 class BoardViewModel @Inject constructor() : ViewModel() {
 
-    private val _startingChoice: MutableStateFlow<Cell?> = MutableStateFlow(null)
-    val startingChoice: StateFlow<Cell?> get() = _startingChoice
+    private val _boardSize = MutableStateFlow(DEFAULT_BOARD_SIZE)
+    val boardSize: MutableStateFlow<Int> = _boardSize
 
-    private val _endingChoice: MutableStateFlow<Cell?> = MutableStateFlow(null)
-    val endingChoice: StateFlow<Cell?> get() = _endingChoice
+    private val _board = MutableStateFlow(createEmptyBoard(DEFAULT_BOARD_SIZE))
+    val board: StateFlow<List<List<Cell>>> = _board.asStateFlow()
 
-    private val visitedCells = mutableSetOf<Cell>()
-    private val _successfulPaths = MutableStateFlow<List<Cell>>(emptyList())
-    val successfulPaths: StateFlow<List<Cell>> get() = _successfulPaths
+    private val _startingChoice = MutableStateFlow<Cell?>(null)
+    val startingChoice: StateFlow<Cell?> = _startingChoice
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> get() = _isLoading
+    private val _endingChoice = MutableStateFlow<Cell?>(null)
+    val endingChoice: StateFlow<Cell?> = _endingChoice
 
-    private val _board = MutableStateFlow<List<List<Cell>>>(emptyList())
-    val board: StateFlow<List<List<Cell>>> get() = _board
+    private val _successfulPaths = MutableStateFlow<List<List<Cell>>>(emptyList())
+    val successfulPaths: StateFlow<List<List<Cell>>> = _successfulPaths
 
-    private val _boardSize = MutableStateFlow(8)
-    val boardSize: StateFlow<Int> get() = _boardSize
+    private val _markedCell = MutableStateFlow<Cell?>(null)
+    val markedCell: StateFlow<Cell?> = _markedCell
 
-    private var pathFound = false
-    private var stepCount = 0
-    private var pathLetterIndex = 0
-    private var searchJob: Job? = null
-
-    init {
-        resetBoard(_boardSize.value)
+    companion object {
+        private const val DEFAULT_BOARD_SIZE = 8
     }
 
     fun setBoardSize(size: Int) {
-        _boardSize.value = size
-        resetBoard(size)
+        _boardSize.tryEmit(size)
+        _board.tryEmit(createEmptyBoard(size))
+        _startingChoice.tryEmit(null)
+        _endingChoice.tryEmit(null)
+        _successfulPaths.tryEmit(emptyList())
+        _markedCell.tryEmit(null)
     }
 
     private fun generateBoard(size: Int): List<List<Cell>> {
@@ -65,36 +64,38 @@ class BoardViewModel @Inject constructor() : ViewModel() {
         return board
     }
 
-    fun findKnightTour(start: Cell, end: Cell, size: Int) {
-        _isLoading.value = true
+    fun findKnightTour(startingChoice: Cell, endingChoice: Cell? = null) {
+        val boardSize = _boardSize.value
+        val board = createEmptyBoard(boardSize)
+        board[startingChoice.x][startingChoice.y].isStarting = true
+        endingChoice?.let {
+            board[it.x][it.y].isEnding = true
+        }
+        _board.tryEmit(board)
 
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch(Dispatchers.Default) {
-            try {
-                pathFound = false
-                visitedCells.clear()
-                _successfulPaths.value = emptyList()
-                val paths = mutableListOf<Cell>()
-                knightTourPath(start, end, visitedCells, paths)
-                if (pathFound) {
-                    withContext(Dispatchers.Main) {
-                        Log.d("BoardViewModel", "Paths Found: ${paths.size}")
-                        _startingChoice.value = start
-                        _endingChoice.value = end
-                        _successfulPaths.value = paths
-                        resetBoard(size)
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Log.d("BoardViewModel", "Paths not found")
-                    }
+        viewModelScope.launch {
+            val paths = mutableListOf<List<Cell>>()
+            knightTourPath(startingChoice, endingChoice, mutableSetOf(), paths)
+            if (paths.isNotEmpty()) {
+                _successfulPaths.tryEmit(paths)
+                val path = paths[0]
+                for (i in path.indices) {
+                    val cell = path[i]
+                    board[cell.x][cell.y].index = i + 1
                 }
-            } finally {
-                withContext(Dispatchers.Main) {
-                    _isLoading.value = false
-                }
+                _board.tryEmit(board)
+                _markedCell.tryEmit(path.last())
             }
         }
+    }
+
+    fun clearBoard() {
+        val boardSize = _boardSize.value
+        _board.tryEmit(createEmptyBoard(boardSize))
+        _startingChoice.tryEmit(null)
+        _endingChoice.tryEmit(null)
+        _successfulPaths.tryEmit(emptyList())
+        _markedCell.tryEmit(null)
     }
 
     init {
@@ -103,15 +104,14 @@ class BoardViewModel @Inject constructor() : ViewModel() {
 
     private fun knightTourPath(
         currentCell: Cell,
-        endCell: Cell,
+        endCell: Cell?,
         visited: MutableSet<Cell>,
-        paths: MutableList<Cell>
+        paths: MutableList<List<Cell>>
     ) {
         visited.add(currentCell)
-        stepCount++
 
-        if (currentCell.x == endCell.x && currentCell.y == endCell.y) {
-            pathFound = true
+        if (currentCell == endCell) {
+            paths.add(visited.toList())
             visited.remove(currentCell)
             return
         }
@@ -121,18 +121,10 @@ class BoardViewModel @Inject constructor() : ViewModel() {
             val nextCell = getCell(move.x, move.y)
             if (nextCell != null && nextCell !in visited) {
                 knightTourPath(nextCell, endCell, visited, paths)
-                if (pathFound) {
-                    val newPath = paths.toMutableList()
-                    newPath.add(nextCell)
-                    newPath.forEach() {
-                        paths.add(it)
-                    }
-                }
             }
         }
 
         visited.remove(currentCell)
-        stepCount--
     }
 
     private fun getValidMoves(cell: Cell): List<Cell> {
@@ -156,7 +148,7 @@ class BoardViewModel @Inject constructor() : ViewModel() {
         Log.d("BoardViewModel", "Resetting board with size $size")
         val startCell = _startingChoice.value
         val endCell = _endingChoice.value
-        val successfulCells = _successfulPaths.value.toSet()
+        val successfulCells = _successfulPaths.value.flatten().toSet()
 
         val newBoard = generateBoard(size).map { rowList ->
             rowList.map { cell ->
@@ -166,12 +158,18 @@ class BoardViewModel @Inject constructor() : ViewModel() {
                     cell in successfulCells -> Color.Green
                     else -> getColorForCell(cell.x, cell.y)
                 }
-                val step = if (cell in successfulCells) (_successfulPaths.value.indexOfFirst { it == cell } + 1) else 0
+                val step = if (cell in successfulCells) {
+                    _successfulPaths.value.indexOfFirst { path -> cell in path } + 1
+                } else {
+                    0
+                }
+
+
                 cell.copy(color = color, step = step)
             }
         }
 
-        _board.value = newBoard
+        _board.tryEmit(newBoard)
         for (row in newBoard) {
             val rowStr = row.joinToString { it.toString() }
             Log.d("BoardViewModel", rowStr)
@@ -196,46 +194,47 @@ class BoardViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-
     private fun getCell(x: Int, y: Int): Cell? {
         return _board.value.getOrNull(x)?.getOrNull(y)
     }
 
     fun setStartingChoice(cell: Cell) {
-        val currentStarting = _startingChoice.value
-        _board.value = _board.value.map { rowList ->
-            rowList.map { it ->
-                if (it == cell) {
-                    it.copy(color = Color.Yellow)
-                } else if (it == currentStarting) {
-                    it.copy(color = getColorForCell(it.x, it.y))
-                } else {
-                    it
-                }
-            }
-        }
-        _startingChoice.value = cell
+        _startingChoice.tryEmit(cell)
+        _endingChoice.tryEmit(null)
+        _successfulPaths.tryEmit(emptyList())
+        _markedCell.tryEmit(null)
+        resetBoard(_boardSize.value)
     }
 
     fun setEndingChoice(cell: Cell) {
-        val currentEnding = _endingChoice.value
-        _board.value = _board.value.map { rowList ->
-            rowList.map { it ->
-                if (it == cell) {
-                    it.copy(color = Color.Blue)
-                } else if (it == currentEnding) {
-                    it.copy(color = getColorForCell(it.x, it.y))
-                } else {
-                    it
-                }
-            }
-        }
-        _endingChoice.value = cell
+        _startingChoice.tryEmit(null)
+        _endingChoice.tryEmit(cell)
+        _successfulPaths.tryEmit(emptyList())
+        _markedCell.tryEmit(null)
+        resetBoard(_boardSize.value)
     }
 
-    fun clearPaths() {
-        _successfulPaths.value = emptyList()
-        _isLoading.value = false
+    fun setBoardCell(cell: Cell) {
+        val currentCell = _markedCell.value
+        if (currentCell == null) {
+            setStartingChoice(cell)
+        } else {
+            if (cell == currentCell) {
+                setStartingChoice(cell)
+            } else {
+                setEndingChoice(cell)
+            }
+        }
+    }
+
+    fun getSuccessfulPaths(): List<List<Cell>> = _successfulPaths.value
+
+    private fun createEmptyBoard(size: Int): List<List<Cell>> {
+        return List(size) { row ->
+            List(size) { col ->
+                Cell(row, col)
+            }
+        }
     }
 }
 

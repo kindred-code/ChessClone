@@ -8,6 +8,7 @@ import javax.inject.Inject
 
 
 class DefaultBoardFactoryImpl @Inject constructor() : DefaultBoardFactory {
+
     override fun create(boardSize: Int): @Composable () -> Unit {
         return {
             Board()

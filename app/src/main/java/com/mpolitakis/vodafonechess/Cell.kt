@@ -10,8 +10,9 @@ data class Cell(
     val color: Color = Color.White,
     val step: Int = 0,
     val pathLetter: String = "",
-    val isStarting: Boolean = false,
-    val isEnding: Boolean = false
+    var isStarting: Boolean = false,
+    var isEnding: Boolean = false,
+    var index: Int = 0
 ) {
     fun copy(
         color: Color = this.color,

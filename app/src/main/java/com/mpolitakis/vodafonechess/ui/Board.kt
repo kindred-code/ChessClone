@@ -34,30 +34,32 @@ fun Board() {
     val startingChoiceState by boardViewModel.startingChoice.collectAsState()
     val endingChoiceState by boardViewModel.endingChoice.collectAsState()
     val successfulPaths by boardViewModel.successfulPaths.collectAsState(initial = emptyList())
+    val markedCell by boardViewModel.markedCell.collectAsState()
 
     val board by boardViewModel.board.collectAsState()
     val updatedBoardSize by rememberUpdatedState(boardSize)
 
-    Column {
-        for (row  in 0 until updatedBoardSize ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        for (row in 0 until updatedBoardSize) {
             Row {
-                for (col in 0 until updatedBoardSize ) {
+                for (col in 0 until updatedBoardSize) {
                     val cell = board[row][col]
+                    val color = if ((row + col) % 2 == 0) {
+                        Color.White
+                    } else {
+                        Color.LightGray
+                    }
                     Box(
-                        Modifier
-                            .sizeIn(10.dp, 20.dp)
-                            .background(cell.color)
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(color)
                             .clickable {
                                 if (cell.isStarting) {
                                     boardViewModel.setStartingChoice(cell)
                                 } else if (cell.isEnding) {
                                     boardViewModel.setEndingChoice(cell)
                                 } else {
-                                    boardViewModel.findKnightTour(
-                                        boardViewModel.startingChoice.value ?: return@clickable,
-                                        cell,
-                                        boardSize
-                                    )
+                                    boardViewModel.findKnightTour(cell)
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -76,12 +78,12 @@ fun Board() {
                             color = Color.Black
                         )
 
-                        if (pathCount > 0) {
-                            val successfulPath = successfulPaths.find { it == cell }
-                            val pathIndex = successfulPaths.indexOf(successfulPath)
-                            if (successfulPath != null) {
-                                boardViewModel.findKnightTour(cell, successfulPath, pathIndex)
-                            }
+                        if (cell == markedCell) {
+                            Box(
+                                modifier = Modifier
+                                    .sizeIn(48.dp, 48.dp)
+                                    .background(Color.Red)
+                            )
                         }
                     }
                 }
@@ -93,17 +95,16 @@ fun Board() {
 
         Spacer(modifier = Modifier.size(16.dp))
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             FloatingActionButton(
                 modifier = Modifier.padding(bottom = 8.dp),
                 onClick = {
-                    boardViewModel.startingChoice.value?.let { startingChoice ->
-                        boardViewModel.endingChoice.value?.let { endingChoice ->
-                            boardViewModel.findKnightTour(
-                                startingChoice,
-                                endingChoice,
-                                boardViewModel.boardSize.value
-                            )
+                    startingChoiceState?.let { startingChoice ->
+                        endingChoiceState?.let { endingChoice ->
+                            boardViewModel.findKnightTour(startingChoice, endingChoice)
                         }
                     }
                 }
@@ -113,11 +114,12 @@ fun Board() {
 
             FloatingActionButton(
                 modifier = Modifier.padding(bottom = 8.dp),
-                onClick = { boardViewModel.clearPaths() }
+                onClick = {
+                    boardViewModel.clearBoard()
+                }
             ) {
-                Text(text = "Clear")
+                Text(text = "Clear Board")
             }
         }
     }
 }
-
