@@ -23,7 +23,8 @@ class KnightTour(private val boardSize: Int) {
 
         visited[startX][startY] = true
 
-        findPathsRecursive(startX, startY, endX, endY, visited, 1, mutableListOf(startCell), paths)
+        val initialPath = mutableListOf(startCell)
+        findPathsRecursive(startX, startY, endX, endY, visited, 1, initialPath, paths)
 
         return paths
     }
@@ -68,4 +69,5 @@ class KnightTour(private val boardSize: Int) {
         return x in 0 until boardSize && y >= 0 && y < boardSize && !visited[x][y]
     }
 }
+
 

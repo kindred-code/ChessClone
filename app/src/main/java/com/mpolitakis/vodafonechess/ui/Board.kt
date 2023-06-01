@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
@@ -48,7 +49,7 @@ fun Board() {
     val board by boardViewModel.board.collectAsState()
     val updatedBoardSize by rememberUpdatedState(boardSize)
     val coroutineScope = rememberCoroutineScope()
-
+    val showDialog = remember { mutableStateOf(false) }
     var isMarked by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -144,10 +145,10 @@ fun Board() {
             onClick = {
                 coroutineScope.launch {
                     startingChoiceState?.let { endingChoiceState?.let { it1 ->
-                        boardViewModel.findKnightTour(
-                            it,
-                            it1
-                        )
+                        val pathsFound = boardViewModel.findKnightTour(it, it1)
+                        if (!pathsFound) {
+                            showDialog.value = true
+                        }
                     } }
                 }
             },
@@ -156,5 +157,18 @@ fun Board() {
         ) {
             Text(text = "Find Tour")
         }
+    }
+
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("No Paths Found") },
+            text = { Text("No successful paths were found.") },
+            confirmButton = {
+                Button(onClick = { showDialog.value = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }

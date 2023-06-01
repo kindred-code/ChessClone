@@ -115,33 +115,34 @@ class BoardViewModel @Inject constructor() : ViewModel() {
     }
 
 
-    suspend fun findKnightTour(startingChoice: Cell, endingChoice: Cell) {
-        viewModelScope.launch {
-            _successfulPaths.tryEmit(emptyList())
+    suspend fun findKnightTour(startingChoice: Cell, endingChoice: Cell): Boolean {
+        _successfulPaths.tryEmit(emptyList())
+        _markedCell.tryEmit(null)
+
+        val boardSize = _boardSize.value
+        val board = generateBoard(boardSize, startingChoice, endingChoice)
+
+        val knightTour = KnightTour(boardSize)
+        val paths = knightTour.findPaths(
+            startingChoice.x,
+            startingChoice.y,
+            endingChoice.x,
+            endingChoice.y
+        )
+        _successfulPaths.emit(paths)
+
+        val pathsFound = paths.isNotEmpty()
+        if (pathsFound) {
+            val path = paths.first()
+            val markedCell = board[path.last().x * boardSize + path.last().y]
+            _markedCell.tryEmit(markedCell)
+        } else {
             _markedCell.tryEmit(null)
-
-            val boardSize = _boardSize.value
-            val board = generateBoard(boardSize, startingChoice, endingChoice)
-
-            val knightTour = KnightTour(boardSize)
-            val paths = knightTour.findPaths(
-                startingChoice.x,
-                startingChoice.y,
-                endingChoice.x,
-                endingChoice.y
-            )
-            _successfulPaths.emit(paths)
-
-            if (paths.isNotEmpty()) {
-                val path = paths.first()
-
-                val markedCell = board[path.last().x * boardSize + path.last().y]
-                _markedCell.tryEmit(markedCell)
-            } else {
-                _markedCell.tryEmit(null)
-            }
         }
+
+        return pathsFound
     }
+
 
     fun clearBoard() {
         viewModelScope.launch {
