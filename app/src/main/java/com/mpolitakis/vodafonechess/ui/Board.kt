@@ -2,17 +2,21 @@ package com.mpolitakis.vodafonechess.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,109 +57,125 @@ fun Board() {
     var isMarked by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        board.chunked(updatedBoardSize).forEach { row ->
-            Row {
-                row.forEach { cell ->
-                    val color =
-                        if ((cell.x + cell.y) % 2 == 0) {
-                            Color.White
-                        } else {
-                            Color.LightGray
-                        }
-
-
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .background(color)
-                            .clickable {
-                                if (!cell.isStarting && !cell.isEnding && !isMarked) {
-                                    coroutineScope.launch {
-                                        if (startingChoiceState == null) {
-                                            boardViewModel.setStartingChoice(cell)
+        Box(modifier = Modifier.weight(1f)) {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(bottom = 20.dp)) {
+                item {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        board.chunked(updatedBoardSize).forEach { row ->
+                            Row {
+                                row.forEach { cell ->
+                                    val color =
+                                        if ((cell.x + cell.y) % 2 == 0) {
+                                            Color.White
                                         } else {
-                                            boardViewModel.setEndingChoice(cell)
-                                            isMarked = true // Mark the cell as ending
+                                            Color.LightGray
                                         }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(60.dp)
+                                            .background(color)
+                                            .clickable {
+                                                if (!cell.isStarting && !cell.isEnding && !isMarked) {
+                                                    coroutineScope.launch {
+                                                        if (startingChoiceState == null) {
+                                                            boardViewModel.setStartingChoice(cell)
+                                                        } else {
+                                                            boardViewModel.setEndingChoice(cell)
+                                                            isMarked = true // Mark the cell as ending
+                                                        }
+                                                    }
+                                                } else if (cell.isEnding) {
+                                                    coroutineScope.launch {
+                                                        startingChoiceState?.let { startingChoice ->
+                                                            endingChoiceState?.let { endingChoice ->
+                                                                boardViewModel.findKnightTour(
+                                                                    startingChoice,
+                                                                    endingChoice
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    boardViewModel.setMarkedCell(cell) // Set the cell as marked
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val pathCount = successfulPaths.size
+                                        val labelText = when {
+                                            cell.isStarting -> "S"
+                                            cell.isEnding -> "E"
+                                            pathCount > 0 -> {
+                                                var foundLabel: String? = null
+                                                successfulPaths.forEachIndexed { index, path ->
+                                                    val pathStep =
+                                                        path.indexOfFirst { it.x == cell.x && it.y == cell.y } + 1
+                                                    if (pathStep > 0) {
+                                                        val pathLetter = ('A' + index).toString()
+                                                        foundLabel = "$pathLetter\n($pathStep)"
+                                                        return@forEachIndexed
+                                                    }
+                                                }
+                                                foundLabel ?: ""
+                                            }
+
+                                            else -> ""
+                                        }
+
+                                        Text(
+                                            text = labelText,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(4.dp)
+                                        )
                                     }
-                                } else if (cell.isEnding) {
-                                    coroutineScope.launch {
-                                        startingChoiceState?.let { endingChoiceState?.let { it1 ->
-                                            boardViewModel.findKnightTour(
-                                                it,
-                                                it1
-                                            )
-                                        } }
-                                    }
-                                } else {
-                                    boardViewModel.setMarkedCell(cell) // Set the cell as marked
                                 }
                             }
-                        ,
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val pathCount = successfulPaths.size
-                        val labelText = when {
-                            cell.isStarting -> "S"
-                            cell.isEnding -> "E"
-                            pathCount > 0 -> {
-                                var foundLabel: String? = null
-                                successfulPaths.forEachIndexed { index, path ->
-                                    val pathStep = path.indexOfFirst { it.x == cell.x && it.y == cell.y } + 1
-                                    if (pathStep > 0) {
-                                        val pathLetter = ('A' + index).toString()
-                                        foundLabel = "$pathLetter\n($pathStep)"
-                                        return@forEachIndexed
-                                    }
-                                }
-                                foundLabel ?: ""
-                            }
-                            else -> ""
                         }
-
-
-
-
-
-                        Text(
-                            text = labelText,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(4.dp)
-                        )
                     }
                 }
             }
         }
 
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    boardViewModel.clearBoard()
-                    isMarked = false
-                }
-            },
-            modifier = Modifier.padding(top = 16.dp),
-            enabled = successfulPaths.isNotEmpty() || markedCell != null
-        ) {
-            Text(text = "Clear Board")
-        }
-
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    startingChoiceState?.let { endingChoiceState?.let { it1 ->
-                        val pathsFound = boardViewModel.findKnightTour(it, it1)
-                        if (!pathsFound) {
-                            showDialog.value = true
+        Box(modifier = Modifier.padding(bottom = 20.dp)) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            boardViewModel.clearBoard()
+                            isMarked = false
                         }
-                    } }
-                }
-            },
-            modifier = Modifier.padding(top = 8.dp),
-            enabled = startingChoiceState != null && endingChoiceState != null
-        ) {
-            Text(text = "Find Tour")
+                    },
+                    content = { Text(text = "Clear Board") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            startingChoiceState?.let { startingChoice ->
+                                endingChoiceState?.let { endingChoice ->
+                                    val pathsFound = boardViewModel.findKnightTour(
+                                        startingChoice,
+                                        endingChoice
+                                    )
+                                    if (!pathsFound) {
+                                        showDialog.value = true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    content = { Text(text = "Find Tour") },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 
