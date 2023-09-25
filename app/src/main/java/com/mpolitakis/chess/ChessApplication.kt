@@ -1,8 +1,7 @@
-package com.mpolitakis.vodafonechess
+package com.mpolitakis.chess
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
 
 @HiltAndroidApp
 class ChessApplication : Application()

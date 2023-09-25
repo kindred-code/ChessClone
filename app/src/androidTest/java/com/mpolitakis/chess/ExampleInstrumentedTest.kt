@@ -1,4 +1,4 @@
-package com.mpolitakis.vodafonechess
+package com.mpolitakis.chess
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

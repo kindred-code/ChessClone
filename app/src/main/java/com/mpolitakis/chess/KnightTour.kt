@@ -1,4 +1,4 @@
-package com.mpolitakis.vodafonechess
+package com.mpolitakis.chess
 
 
 class KnightTour(private val boardSize: Int) {

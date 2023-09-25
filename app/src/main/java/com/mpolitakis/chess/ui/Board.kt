@@ -1,4 +1,4 @@
-package com.mpolitakis.vodafonechess.ui
+package com.mpolitakis.chess.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -6,21 +6,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,15 +25,12 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mpolitakis.vodafonechess.BoardViewModel
-import com.mpolitakis.vodafonechess.Cell
+import com.mpolitakis.chess.BoardViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -56,8 +48,6 @@ fun Board() {
     val showDialog = remember { mutableStateOf(false) }
     var isMarked by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(1f)) {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(bottom = 20.dp)) {
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -82,7 +72,8 @@ fun Board() {
                                                             boardViewModel.setStartingChoice(cell)
                                                         } else {
                                                             boardViewModel.setEndingChoice(cell)
-                                                            isMarked = true // Mark the cell as ending
+                                                            isMarked =
+                                                                true // Mark the cell as ending
                                                         }
                                                     }
                                                 } else if (cell.isEnding) {
@@ -136,7 +127,7 @@ fun Board() {
                     }
                 }
             }
-        }
+
 
         Box(modifier = Modifier.padding(bottom = 20.dp)) {
             Row(
@@ -177,7 +168,7 @@ fun Board() {
                 )
             }
         }
-    }
+
 
     if (showDialog.value) {
         AlertDialog(
@@ -192,3 +183,4 @@ fun Board() {
         )
     }
 }
+

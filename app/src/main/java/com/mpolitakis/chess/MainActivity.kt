@@ -1,4 +1,4 @@
-package com.mpolitakis.vodafonechess
+package com.mpolitakis.chess
 
 
 import android.os.Bundle
@@ -33,8 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.mpolitakis.vodafonechess.ui.Board
-import com.mpolitakis.vodafonechess.ui.theme.VodafoneChessTheme
+import com.mpolitakis.chess.ui.Board
+import com.mpolitakis.chess.ui.theme.ChessTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            VodafoneChessTheme {
+            ChessTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

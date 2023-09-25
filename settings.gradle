@@ -1,16 +1,23 @@
+
 pluginManagement {
     repositories {
         google()
+        jcenter()
         mavenCentral()
         gradlePluginPortal()
+        maven { url 'https://maven.google.com' }
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        jcenter()
         mavenCentral()
+        gradlePluginPortal()
+        maven { url 'https://maven.google.com' }
     }
 }
-rootProject.name = "Vodafone Chess"
+
+rootProject.name = "Chess"
 include ':app'

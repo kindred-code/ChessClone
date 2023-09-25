@@ -1,6 +1,4 @@
-package com.mpolitakis.vodafonechess
-
-import androidx.compose.ui.graphics.Color
+package com.mpolitakis.chess
 
 
 data class Cell(

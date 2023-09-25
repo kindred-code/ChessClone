@@ -1,7 +1,7 @@
-package com.mpolitakis.vodafonechess
+package com.mpolitakis.chess
 
 import androidx.compose.runtime.Composable
-import com.mpolitakis.vodafonechess.ui.Board
+import com.mpolitakis.chess.ui.Board
 import javax.inject.Inject
 
 

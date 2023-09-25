@@ -1,4 +1,4 @@
-package com.mpolitakis.vodafonechess.ui.theme
+package com.mpolitakis.chess.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

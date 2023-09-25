@@ -10,14 +10,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.VodafoneChess"
+        android:theme="@style/Theme.Chess"
         tools:targetApi="31"
-        android:name="com.mpolitakis.vodafonechess.ChessApplication">
+        android:name="com.mpolitakis.chess.ChessApplication">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.VodafoneChess">
+            android:theme="@style/Theme.Chess">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'com.mpolitakis.vodafonechess'
+    namespace 'com.mpolitakis.chess'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.mpolitakis.vodafonechess"
+        applicationId "com.mpolitakis.chess"
         minSdk 29
         targetSdk 33
         versionCode 1
